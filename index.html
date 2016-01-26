@@ -1,8 +1,19 @@
 <html>
-<head></head>
-<body>
- <div>
-  <h1>Hi this is angular</h1>
+<head>
+<script type="text/javascript" src="scripts/angular.min.js"></script>
+<script type="text/javascript" src="scripts/app.js"></script>
+</head>
+<body ng-app="app">
+ <div ng-controller="appcontroller">
+  <h1>{{msg}}</h1>
+  <div>
+   <ul ng-repeat="emp in oemp">
+    <li>{{emp.empName | lowercase }}<li>
+    <li>{{emp.empCity}}<li>
+    <li>{{emp.empDOB}}<li>
+   </ul>
+  </div>
+
  </div>
 </body>
 </html>
