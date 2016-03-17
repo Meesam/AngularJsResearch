@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <base href="/">
+    <title>TruckRight</title>
+    <link href="assets/angular-notify.min.css" rel="stylesheet" />
+    <link href="assets/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/sb-admin-2.css" rel="stylesheet">
+    <link href="assets/font-awesome.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <script type="text/javascript">
+        var FTVer = '0aq';
+        var RelDate = '8th March 2016';
+    </script>
+</head>
+<body ng-app="TRapp" ng-controller="mainCtrl">
+    <div id="dBusy" class="ng-cloak" ng-show="isBusy>0"><i class="fa fa-cog fa-spin"></i> Working...<div style="width:{{isBusy*5}}px"></div></div>
+    <div id="wrapper" class="ng-cloak">
+        <nav class="navbar navbar-default navbar-fixed-top" role="navigation" style="margin-bottom:0;" ng-show="mUser!=null">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <ul class="nav navbar-top-links navbar-right ng-cloak">
+                    <li class="hidden-xs">{{mUser.FullName}}&nbsp;&nbsp;</li>
+                    <li class="dropdown hidden-xs">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                            <i class="fa fa-envelope fa-fw"></i>  <i class="fa fa-caret-down"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-messages">
+                            <li><p class="text-muted text-center"><br />No new messages<br /><br /></p></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown hidden-xs">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                            <i class="fa fa-bell fa-fw"></i>  <i class="fa fa-caret-down"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-alerts">
+                            <li><p class="text-muted text-center"><br />No new alerts<br /><br /></p></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                            <i class="fa fa-user fa-fw"></i>  <i class="fa fa-caret-down"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-user">
+                            <li><a href="/settings"><i class="fa fa-gear fa-fw"></i> User Settings</a></li>
+                            <li><a href="/user/{{mUser.UserId}}"><i class="fa fa-user fa-fw"></i> User Profile</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#" ng-click="logOut()"><i class="fa fa-sign-out fa-fw"></i> Sign out</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <img src="assets/logo50.png" alt="TruckRight" style="margin:5px" />
+                <div class="dropdown IA-inlineblock CP">
+                    <b class="text-primary dropdown-toggle" data-toggle="dropdown" style="font-size:larger">{{mUser.BUName}} <i class="fa fa-caret-down"></i></b>
+                    <ul class="dropdown-menu">
+                        <li ng-repeat="bu in BUList"><a ng-click="changeBU(bu.BUID)"><span ng-class="mUser.CurBU==bu.BUID?'text-primary':''">{{bu.BUName}}</span></a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <div class="sidebar" role="navigation" ng-show="mUser!=null">
+            <div class="sidebar-nav navbar-collapse">
+                <ul class="nav" id="side-menu">
+                    <li class="sidebar-search">
+                        <form ng-submit="doSearch()" class="input-group">
+                            <input type="text" class="form-control" ng-model="globalSearch" placeholder="Search...">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" ng-disabled="isBusy>0" type="submit"><i class="fa fa-search"></i></button>
+                            </span>
+                        </form>
+                    </li>
+                    <li ng-repeat="menu in mainMenu" ng-class="menu.Url==loc.path()?'menuSel':''">
+                        <a href="{{menu.Url}}" ng-click="menu.Exp=!menu.Exp"><i class="fa fa-fw {{menu.faIcon}}"></i> {{menu.MenuName}} <i ng-show="menu.Url=='#'" class="pull-right fa {{menu.Exp?'fa-caret-up':'fa-caret-down'}}"></i></a>
+                        <ul class="nav nav-second-level" ng-show="menu.Exp">
+                            <li ng-repeat="sub in menu.SubMenus" ng-class="sub.Url==loc.path()?'menuSel':''"><a href="{{sub.Url}}">{{sub.MenuName}}</a> </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <iframe id="iFile" style="display:none"></iframe>
+        <!-- Page Content -->
+        <div id="page-wrapper" ng-nide="mUser==null&&loc.path()!='/signin'" ng-style="mUser==null?{margin:0}:{}">
+            <div class="container-fluid">
+                <div class="row" ng-view ng-if="ErrPage==null"></div>
+                <br /><br />
+                <div class="well text-center" ng-show="ErrPage">
+                    <h4>Oops! Something's not right...</h4>
+                    <div ng-if="ErrPage!=null" ng-include="'views/err/err'+ErrPage+'.html'"></div>
+                    <br />
+                    If you feel this is not right, kindly request your administrator or contact <a href="mailto:support@truckright.in">support@truckright.in</a>.
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://apis.google.com/js/api:client.js"></script>
+    <script src="assets/jquery.min.js"></script>
+    <script src="assets/bootstrap.min.js"></script>
+    <script src="assets/moment.js"></script>
+    <script src="assets/angular.min.js"></script>
+    <script src="assets/ang-ui.js"></script>
+    <script src="assets/script.min.js"></script>
+    <script src="assets/angular-animate.min.js"></script>
+    <script src="assets/angular-sanitize.min.js"></script>
+    <script src="assets/angular-route.min.js"></script>
+    <script src="assets/angular-cookies.min.js"></script>
+    <script src="assets/angular-notify.min.js"></script>
+    <script src="assets/angular-timeago.min.js"></script>
+    <script src="assets/angucomplete-alt.min.js"></script>
+    <script src="assets/angular-sortable-view.min.js"></script>
+    <script src="assets/ng-file-upload.min.js"></script>
+    <script src="assets/sb-admin-2.js"></script>
+    <script src="assets/nprogress.js"></script>
+    <script src="http://maps.googleapis.com/maps/api/js"></script>
+    <script>
+        var script = document.createElement('script');
+        script.src = 'scripts/services.js?rel=' + FTVer;
+        document.write(script.outerHTML);
+        script.src = 'scripts/app.js?rel=' + FTVer;
+        document.write(script.outerHTML);
+    </script>
+    <div id="footer">&copy; Bitmetric Technologies Pvt. Ltd.; Ver:
+    <script>document.write(FTVer);</script>; Rel:
+    <script>document.write(RelDate);</script>;</div>
+</body>
+</html>
