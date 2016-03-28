@@ -49,3 +49,33 @@ app.registerCtrl('signinCtrl', function signinCtrl($scope, $rootScope, $http, $l
         });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="col-sm-6 col-lg-5">
+                            Log End Date:<p class="input-group">
+                                <input type="text" id="logend" class="form-control requires" ng-click="logend=true" uib-datepicker-popup="dd MMM yyyy" ng-model="tempTruckLog.LogEnd"
+                                       is-open="logend" close-text="Close" readonly />
+                                <span class="input-group-btn">
+                                    <button type="button" class="btn btn-default" ng-click="logend=true"><i class="fa fa-calendar"></i></button>
+                                </span>
+                            </p>
+                        </div>
+
+
+
+
+
+
+
+
