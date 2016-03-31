@@ -1,0 +1,186 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Web;
+
+namespace TR.Models
+{
+    public class TripClass:BaseObj
+    {
+        #region TripClass Properties
+
+        public int TripId { get; set; }
+        public int TripDefId { get; set; }
+        public int VehicleId { get; set; }
+        public int Driver { get; set; }
+        public int? TurnMan { get; set; }
+        public int FuelAlloc { get; set; }
+        public string Trailers { get; set; }
+        public DateTime TripStart { get; set; }
+        public DateTime? TripEnd { get; set; }
+        public int? Duration { get; set; }
+        public int? OdoStart { get; set; }
+        public int? OdoEnd { get; set; }
+        public string Remarks { get; set; }
+        public DateTime Created { get; set; }
+        public int CreatedBy { get; set; }
+        public int Status { get; set; }
+        public string DriverName { get; set; }
+        public string TripName { get; set; }
+        public string TurnManName { get; set; }
+        public string FleetId { get; set; }
+        public int ConCount { get; set; }
+        public string StatusName { get { return Enum.GetName(typeof(StatusEnum), Status); } }
+
+        #endregion
+
+        #region TripClass Enum
+
+        public enum StatusEnum
+        {
+            Draft=0,
+            Fixed=1,
+            Completed=2
+        }
+
+        #endregion
+
+        #region TripClass Functions
+
+        public static Result GetAllTrips(TableInfo aTInfo)
+        {
+            Result lRes = UserClass.GetUserByToken(aTInfo.Token);
+            if (!lRes.IsSuccess) return lRes;
+            StringBuilder lQuery = new StringBuilder();
+
+            // Get filters
+            string lFilters = getAllFilters(aTInfo.Filters);
+
+            // Get Total Count Query and add filters
+            lQuery.Append("Select COUNT(*) from TripView");
+            if (lFilters.Length > 0) lQuery.Append(" where " + lFilters);
+
+            // Get total
+            lRes.TotalRows = Convert.ToInt32(DAL.GetScalar(lQuery.ToString(), null, null).Scalar);
+
+            // if page requested is past total rows, set curpage to last page
+            int maxPages = (lRes.TotalRows + aTInfo.RPP - 1) / aTInfo.RPP;
+            if (aTInfo.CurPage > maxPages) aTInfo.CurPage = maxPages;
+            if (aTInfo.CurPage == 0) aTInfo.CurPage = 1;
+
+            // Build main query
+            lQuery.Clear();
+            lQuery.Append(@"select * from TripView");
+            if (lFilters.Length > 0) lQuery.Append(" where " + lFilters);
+
+            // Sorting
+            if (String.IsNullOrEmpty(aTInfo.SortBy)) aTInfo.SortBy = "TripName";
+            lQuery.Append(" Order By " + aTInfo.SortBy);
+            if (aTInfo.SortDesc) lQuery.Append(" Desc");
+
+            // Paging   
+            lQuery.Append(aTInfo.getPagingSQL());
+            lRes.ReturnObj = DAL.Query<TripClass>(lQuery.ToString(), null);
+            return lRes;
+        }
+
+        private static string getAllFilters(string[] aFilters)
+        {
+            if (aFilters == null || aFilters.Length == 0) return String.Empty;
+            StringBuilder lClauses = new StringBuilder();
+            string lClause;
+            for (int i = 0; i < aFilters.Length; i++)
+            {
+                lClause = getFilterSQL(i, aFilters[i]);
+                if (lClause.Length > 0)
+                {
+                    if (lClauses.Length > 0) lClauses.Append(" and ");
+                    lClauses.Append(lClause);
+                }
+            }
+            return lClauses.ToString();
+        }
+
+        private static string getFilterSQL(int aIdx, string aFilter)
+        {
+            if (String.IsNullOrEmpty(aFilter)) return "";
+            switch (aIdx)
+            {
+                case 0:
+                    return " TripDefId = " + DAL.ReplaceQuote(aFilter);
+                case 1:
+                    return " FleetId like ('%" + DAL.ReplaceQuote(aFilter) + "%')";
+            }
+            return String.Empty;
+        }
+
+        public static TripClass Get(int aTripID)
+        {
+            var IItem = new TripClass();
+            var lItem = DAL.Query<TripClass>("Select * from TripView where TRIPID=@TRIPID", new { TRIPID = aTripID });
+            if (lItem.Count() == 0) IItem.SetInfo(Result.ResultCode.NoAction, "No such trip.");
+            else { IItem = lItem.First(); IItem.SetInfo(Result.ResultCode.Success, ""); }
+            return IItem;
+        }
+
+        private Result Validate()
+        {
+            var lRes = new Result();
+            //if (CatId == 0)
+            //    return lRes.Set(Result.ResultCode.NoAction, "Please select the category");
+            //if (ItemCode.Length == 0)
+            //    return lRes.Set(Result.ResultCode.NoAction, "Item Code is required");
+            //if (ItemName.Length == 0)
+            //    return lRes.Set(Result.ResultCode.NoAction, "Item Name is required");
+            //if (InitStock == 0)
+            //    return lRes.Set(Result.ResultCode.NoAction, "Initial Stock is required");
+            lRes.Set(Result.ResultCode.Success, "");
+            return lRes;
+        }
+
+
+        public Result Save(UserClass aUser)
+        {
+            if (aUser.CurBU != "FLT" || aUser.MinLevel > 3) return new Result(Result.ResultCode.NoAction, "Permission Denied");
+            Result lRes = Validate();
+            if (!lRes.IsSuccess) return lRes;
+            if (TripId == 0)
+            {
+                lRes = DAL.ExecuteNQ(@"INSERT INTO TRIP (TRIPDEFID,VEHICLEID,DRIVER,TURNMAN,FUELALLOC,TRAILERS,TRIPSTART, TRIPEND,ODOSTART,ODOEND,REMARKS, CREATEDBY,STATUS)
+                                        VALUES(@TRIPDEFID,@VEHICLEID,@DRIVER,@TURNMAN,@FUELALLOC,@TRAILERS,@TRIPSTART, @TRIPEND,@ODOSTART,@ODOEND,@REMARKS,@CREATEDBY,@STATUS)", null,
+                                      @" @TRIPDEFID,@VEHICLEID,@DRIVER,@TURNMAN,@FUELALLOC,@TRAILERS,@TRIPSTART, @TRIPEND,@ODOSTART,@ODOEND,@REMARKS, @CREATEDBY,@STATUS",
+                                       TripDefId, VehicleId, Driver, DAL.CheckNull(TurnMan), FuelAlloc, Trailers, TripStart, DAL.CheckNull(TripEnd), DAL.CheckNull(OdoStart),DAL.CheckNull(OdoEnd),DAL.CheckNull(Remarks),aUser.UserID,
+                                       Status
+                                       );
+                if (lRes.IsSuccess)
+                {
+                    TripId = (Int32)lRes.Identity;
+                    ActionClass.logAction(aUser, "Trip Created", Trailers, "Trip", TripId);
+                }
+               
+            }
+            else
+            {
+                lRes = DAL.ExecuteNQ(@"UPDATE TRIP SET TRIPDEFID=@TRIPDEFID,VEHICLEID=@VEHICLEID,DRIVER=@DRIVER,TURNMAN=@TURNMAN,FUELALLOC=@FUELALLOC,
+                                        TRAILERS=@TRAILERS,TRIPSTART=@TRIPSTART,TRIPEND=@TRIPEND,ODOSTART=@ODOSTART,ODOEND=@ODOEND,REMARKS=@REMARKS,
+                                        STATUS=@STATUS WHERE TRIPID=@TRIPID", null,
+                        @" @TRIPDEFID,@VEHICLEID,@DRIVER,@TURNMAN,@FUELALLOC,@TRAILERS,@TRIPSTART, @TRIPEND,@ODOSTART,@ODOEND,@REMARKS,@STATUS,@TRIPID",
+                         TripDefId, VehicleId, Driver, DAL.CheckNull(TurnMan), FuelAlloc, Trailers, TripStart, DAL.CheckNull(TripEnd), DAL.CheckNull(OdoStart), DAL.CheckNull(OdoEnd), DAL.CheckNull(Remarks), Status, TripId);
+               
+                if (lRes.IsSuccess) ActionClass.logAction(aUser, "Trip Updated", TripName, "Trip", TripId, null);
+            }
+            return lRes;
+        }
+
+        public Result Delete(UserClass aUser)
+        {
+            if (aUser.CurBU != "FLT" || aUser.MinLevel > 1) return new Result(Result.ResultCode.NoAction, "Permission Denied");
+            Result lRes = DAL.ExecuteNQ("Delete From TRIP Where TRIPID=@TRIPID", null, "@TRIPID", TripId);
+            if (lRes.IsSuccess) ActionClass.logAction(aUser, "Trip Deleted", "Trip", "Trip", TripId); else lRes.Info = "Unable to delete trip ";
+            return lRes;
+        }
+        
+        #endregion
+    }
+}
