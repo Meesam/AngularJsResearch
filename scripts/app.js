@@ -17,3 +17,26 @@ app.controller('appcontroller',['$scope',function($scope){
     	empDOB:'07/08/1982'
     }];
 }]);
+
+// WebApi Config
+public static void Register(HttpConfiguration config)
+        {
+            // Web API routes
+            config.MapHttpAttributeRoutes();
+            config.Formatters.Remove(config.Formatters.XmlFormatter);
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{action}"
+            );
+        }
+                                                                                                                                                                                                
+        // Global asax
+        
+        protected void Application_Start()
+        {
+            GlobalConfiguration.Configure(WebApiConfig.Register);
+        }
+
+
+
+
